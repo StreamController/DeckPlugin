@@ -5,7 +5,7 @@ from src.backend.PluginManager.PluginBase import PluginBase
 import gi
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gtk, Adw
+from gi.repository import Gtk, Adw, Gio
 
 import sys
 import os
@@ -17,6 +17,9 @@ sys.path.append(os.path.dirname(__file__))
 
 # Import globals
 import globals as gl
+
+# Import own modules
+from plugins.dev_core447_DeckPlugin.ComboRow import ComboRow
 
 class ChangePage(ActionBase):
     ACTION_NAME = "Change Page"
@@ -32,28 +35,31 @@ class ChangePage(ActionBase):
         self.set_settings(settings)
 
     def get_config_rows(self) -> list:
-        self.page_model = Gtk.StringList()
-        self.page_selector = Adw.ComboRow(model=self.page_model, title="Page:",
-                                          subtitle="Select page to swtich to")
+        self.page_model = Gtk.ListStore.new([str, str])
+        # self.page_selector = Adw.ComboRow(model=self.page_model)
+        # \Adw.ComboRow(model=self.page_model, title="Page:",
+                                        #   subtitle="Select page to swtich to")
+        self.page_selector_row = ComboRow(model=self.page_model, title="Page:")
+
+        self.page_selector_cell_renderer = Gtk.CellRendererText()
+        self.page_selector_row.combo_box.pack_start(self.page_selector_cell_renderer, True)
+        self.page_selector_row.combo_box.add_attribute(self.page_selector_cell_renderer, "text", 0)
         
         self.load_page_model()
 
-        
         self.load_config_defaults()
 
-        self.page_selector.connect("notify::selected-item", self.on_change_page)
+        # self.page_selector.connect("notify::selected-item", self.on_change_page)
+        self.page_selector_row.combo_box.connect("changed", self.on_change_page)
 
-        return [self.page_selector]
+        return [self.page_selector_row]
         
 
     def load_page_model(self):
-        # Clear
-        for i in range(self.page_model.get_n_items()):
-            self.page_model.remove(0)
-
-        # Add pages
-        for page in gl.page_manager.get_pages(remove_extension=True):
-            self.page_model.append(page)
+        # self.page_model.clear()
+        for page in gl.page_manager.get_pages():
+            display_name = os.path.splitext(os.path.basename(page))[0]
+            self.page_model.append([display_name, page])
 
     def load_config_defaults(self):
         settings = self.get_settings()
@@ -62,23 +68,29 @@ class ChangePage(ActionBase):
         
         # Update page selector
         selected_page = settings.setdefault("selected_page", None)
-        position = 0
-        if selected_page is not None:
-            for i in range(self.page_model.get_n_items()):
-                if self.page_model.get_item(i).get_string() == selected_page:
-                    position = i
-                    break
-        self.page_selector.set_selected(position)
+        self.set_selected(selected_page)
+
+    def set_selected(self, page_path: str) -> None:
+        for i, row in enumerate(self.page_model):
+            if row[1] == page_path:
+                self.page_selector_row.combo_box.set_active(i)
+                return
+            
+        self.page_selector_row.combo_box.set_active(-1)
+        
 
     def on_change_page(self, combo, *args):
+        page_path = self.page_model[combo.get_active()][1]
+        
+
         settings = self.get_settings()
-        settings["selected_page"] = combo.get_selected_item().get_string()
+        settings["selected_page"] = page_path
         self.set_settings(settings)
 
     def on_key_down(self):
-        page = gl.page_manager.get_page(self.get_settings()["selected_page"], deck_controller = self.deck_controller)
+        page_path = self.get_settings().get("selected_page")
+        page = gl.page_manager.get_page(page_path, deck_controller = self.deck_controller)
         self.deck_controller.load_page(page)
-
 
 class GoToSleep(ActionBase):
     ACTION_NAME = "Go To Sleep"
