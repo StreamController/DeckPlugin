@@ -21,10 +21,15 @@ import globals as gl
 # Import own modules
 from plugins.dev_core447_DeckPlugin.ComboRow import ComboRow
 
+# Import signals
+from src.backend.PluginManager import Signals
+
 class ChangePage(ActionBase):
     ACTION_NAME = "Change Page"
     def __init__(self, deck_controller, page, coords):
         super().__init__(deck_controller=deck_controller, page=page, coords=coords)
+
+        self.connect(signal=Signals.PageRename, callback=self.on_page_rename)
 
         self.set_default_image(Image.open(os.path.join(self.PLUGIN_BASE.PATH, "assets", "folder.png")))
 
@@ -56,7 +61,6 @@ class ChangePage(ActionBase):
         
 
     def load_page_model(self):
-        # self.page_model.clear()
         for page in gl.page_manager.get_pages():
             display_name = os.path.splitext(os.path.basename(page))[0]
             self.page_model.append([display_name, page])
@@ -91,6 +95,20 @@ class ChangePage(ActionBase):
         page_path = self.get_settings().get("selected_page")
         page = gl.page_manager.get_page(page_path, deck_controller = self.deck_controller)
         self.deck_controller.load_page(page)
+
+    def on_page_rename(self, old_path: str, new_path: str):
+        settings = self.get_settings()
+        if settings.get("selected_page") == old_path:
+            settings["selected_page"] = new_path
+            self.set_settings(settings)
+
+            if hasattr(self, "page_model"):
+                # Update page model
+                self.page_selector_row.combo_box.disconnect_by_func(self.on_change_page)
+                self.page_model.clear()
+                self.load_page_model()
+                self.set_selected(new_path)
+                self.page_selector_row.combo_box.connect("changed", self.on_change_page)
 
 class GoToSleep(ActionBase):
     ACTION_NAME = "Go To Sleep"
