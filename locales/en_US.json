@@ -5,5 +5,7 @@
     "actions.set-brightness.name": "Set Brightness",
     "actions.revert-brightness.name": "Revert Brightness",
     "actions.increase-brightness.name": "Increase Brightness",
-    "actions.decrease-brightness.name": "Decrease Brightness"
+    "actions.decrease-brightness.name": "Decrease Brightness",
+    "actions.change-page.drop-down-label": "Page:",
+    "actions.set-brightness.scale-label": "Brightness:"
 }

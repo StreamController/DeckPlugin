@@ -5,5 +5,7 @@
     "actions.set-brightness.name": "Helligkeit Ändern",
     "actions.revert-brightness.name": "Helligkeit zurücksetzen",
     "actions.increase-brightness.name": "Helligkeit erhöhen",
-    "actions.decrease-brightness.name": "Helligkeit verringern"
+    "actions.decrease-brightness.name": "Helligkeit verringern",
+    "actions.change-page.drop-down-label": "Seite:",
+    "actions.set-brightness.scale-label": "Helligkeit:"
 }

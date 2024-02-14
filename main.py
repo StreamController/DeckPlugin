@@ -50,7 +50,7 @@ class ChangePage(ActionBase):
         # self.page_selector = Adw.ComboRow(model=self.page_model)
         # \Adw.ComboRow(model=self.page_model, title="Page:",
                                         #   subtitle="Select page to swtich to")
-        self.page_selector_row = ComboRow(model=self.page_model, title="Page:")
+        self.page_selector_row = ComboRow(model=self.page_model, title=self.plugin_base.lm.get("actions.change-page.drop-down-label"))
 
         self.page_selector_cell_renderer = Gtk.CellRendererText()
         self.page_selector_row.combo_box.pack_start(self.page_selector_cell_renderer, True)
@@ -141,7 +141,7 @@ class SetBrightness(ActionBase):
         self.brighness_scale.set_draw_value(True)
         self.brightness_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True,
                                       margin_top=5, margin_bottom=5, margin_start=5, margin_end=5)
-        self.brightness_box.append(Gtk.Label(label="Brightness", margin_bottom=5, xalign=0))
+        self.brightness_box.append(Gtk.Label(label=self.plugin_base.lm.get("actions.set-brightness.scale-label"), margin_bottom=5, xalign=0))
         self.brightness_box.append(self.brighness_scale)
         self.brightness_row.set_child(self.brightness_box)
 
