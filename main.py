@@ -25,6 +25,7 @@ from plugins.dev_core447_DeckPlugin.ComboRow import ComboRow
 from src.backend.PluginManager import Signals
 
 class ChangePage(ActionBase):
+    ACTION_ID = "dev_core447_DeckPlugin::ChangePage"
     ACTION_NAME = "Change Page"
     def __init__(self, deck_controller, page, coords):
         super().__init__(deck_controller=deck_controller, page=page, coords=coords)
@@ -111,6 +112,7 @@ class ChangePage(ActionBase):
                 self.page_selector_row.combo_box.connect("changed", self.on_change_page)
 
 class GoToSleep(ActionBase):
+    ACTION_ID = "dev_core447_DeckPlugin::GoToSleep"
     ACTION_NAME = "Go To Sleep"
     def __init__(self, deck_controller, page, coords):
         super().__init__(deck_controller=deck_controller, page=page, coords=coords)
@@ -121,6 +123,7 @@ class GoToSleep(ActionBase):
         self.deck_controller.screen_saver.show()
 
 class ChangeBrightness(ActionBase):
+    ACTION_ID = "dev_core447_DeckPlugin::ChangeBrightness"
     ACTION_NAME = "Change Brightness"
     def __init__(self, deck_controller, page, coords):
         super().__init__(deck_controller=deck_controller, page=page, coords=coords)
@@ -157,6 +160,7 @@ class ChangeBrightness(ActionBase):
         self.deck_controller.set_brightness(self.get_settings().get("brightness", self.deck_controller.current_brightness))
 
 class RevertBrightness(ActionBase):
+    ACTION_ID = "dev_core447_DeckPlugin::RevertBrightnessToDefault"
     ACTION_NAME = "Revert Brightness To Default"
     def __init__(self, deck_controller, page, coords):
         super().__init__(deck_controller=deck_controller, page=page, coords=coords)
@@ -167,6 +171,7 @@ class RevertBrightness(ActionBase):
         self.deck_controller.set_brightness(self.PLUGIN_BASE.original_brightness)
 
 class IncreaseBrightness(ActionBase):
+    ACTION_ID = "dev_core447_DeckPlugin::IncreaseBrightness"
     ACTION_NAME = "Increase Brightness"
     def __init__(self, deck_controller, page, coords):
         super().__init__(deck_controller=deck_controller, page=page, coords=coords)
@@ -179,6 +184,7 @@ class IncreaseBrightness(ActionBase):
         self.deck_controller.set_brightness(self.deck_controller.current_brightness + 10)
 
 class DecreaseBrightness(ActionBase):
+    ACTION_ID = "dev_core447_DeckPlugin::DecreaseBrightness"
     ACTION_NAME = "Decrease Brightness"
     def __init__(self, deck_controller, page, coords):
         super().__init__(deck_controller=deck_controller, page=page, coords=coords)
@@ -204,3 +210,4 @@ class DeckPlugin(PluginBase):
         self.add_action(RevertBrightness)
         self.add_action(IncreaseBrightness)
         self.add_action(DecreaseBrightness)
+        #FIXME: last action gets loaded even when no id is provided
