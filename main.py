@@ -259,7 +259,7 @@ class DeckPlugin(PluginBase):
 
         # Register plugin
         self.register(
-            plugin_name=gl.lm.get("plugin.name"),
+            plugin_name=self.lm.get("plugin.name"),
             github_repo="https://github.com/Core447/DeckPlugin",
             version="0.1"
         )
