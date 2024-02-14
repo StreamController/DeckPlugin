@@ -138,9 +138,12 @@ class SetBrightness(ActionBase):
     def get_config_rows(self) -> list:
         self.brightness_row = Adw.PreferencesRow(title="Brightness:")
         self.brighness_scale = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, 0, 100, 1)
-        self.brightness_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True)
-        self.brightness_box.append(Gtk.Label(label="Brightness", margin_bottom=3))
+        self.brighness_scale.set_draw_value(True)
+        self.brightness_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True,
+                                      margin_top=5, margin_bottom=5, margin_start=5, margin_end=5)
+        self.brightness_box.append(Gtk.Label(label="Brightness", margin_bottom=5, xalign=0))
         self.brightness_box.append(self.brighness_scale)
+        self.brightness_row.set_child(self.brightness_box)
 
         self.load_config_defaults()
 
