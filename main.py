@@ -235,6 +235,7 @@ class DeckPlugin(PluginBase):
             action_id="dev_core447_DeckPlugin::ChangeBrightness",
             action_name=self.lm.get("actions.set-brightness.name")
         )
+        self.add_action_holder(self.change_brightness_holder)
 
         self.revert_brightness_holder = ActionHolder(
             plugin_base=self,
