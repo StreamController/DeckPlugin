@@ -265,7 +265,8 @@ class DeckPlugin(PluginBase):
         self.register(
             plugin_name=self.lm.get("plugin.name"),
             github_repo="https://github.com/Core447/DeckPlugin",
-            version="0.1"
+            plugin_version="0.1",
+            app_version="0.1.1-alpha"
         )
 
     def init_locale_manager(self):
