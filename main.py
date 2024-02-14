@@ -266,5 +266,4 @@ class DeckPlugin(PluginBase):
 
     def init_locale_manager(self):
         self.lm = self.locale_manager
-        # self.lm.set_to_os_default()
-        self.lm.set_language("de_DE")
+        self.lm.set_to_os_default()
