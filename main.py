@@ -38,12 +38,12 @@ class ChangePage(ActionBase):
 
         self.connect(signal=Signals.PageRename, callback=self.on_page_rename)
 
-        self.set_default_image(Image.open(os.path.join(self.plugin_base.PATH, "assets", "folder.png")))
     def on_ready(self):
         # Ensures that there is always one page selected
         settings = self.get_settings()
         settings.setdefault("selected_page", gl.page_manager.get_pages()[0])
         self.set_settings(settings)
+        self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "folder.png"))
 
     def get_config_rows(self) -> list:
         self.page_model = Gtk.ListStore.new([str, str])
@@ -122,7 +122,8 @@ class GoToSleep(ActionBase):
         super().__init__(action_id=action_id, action_name=action_name,
             deck_controller=deck_controller, page=page, coords=coords, plugin_base=plugin_base)
 
-        self.set_default_image(Image.open(os.path.join(self.plugin_base.PATH, "assets", "sleep.png")))
+    def on_ready(self):
+        self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "sleep.png"), size=0.8)
 
     def on_key_down(self):
         self.deck_controller.screen_saver.show()
@@ -133,7 +134,8 @@ class SetBrightness(ActionBase):
         super().__init__(action_id=action_id, action_name=action_name,
             deck_controller=deck_controller, page=page, coords=coords, plugin_base=plugin_base)
 
-        self.set_default_image(Image.open(os.path.join(self.plugin_base.PATH, "assets", "light.png")))
+    def on_ready(self):
+        self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "light.png"))
 
     def get_config_rows(self) -> list:
         self.brightness_row = Adw.PreferencesRow(title="Brightness:")
@@ -173,7 +175,8 @@ class RevertBrightness(ActionBase):
         super().__init__(action_id=action_id, action_name=action_name,
             deck_controller=deck_controller, page=page, coords=coords, plugin_base=plugin_base)
 
-        self.set_default_image(Image.open(os.path.join(self.plugin_base.PATH, "assets", "light.png")))
+    def on_ready(self):
+        self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "light.png"))
 
     def on_key_down(self):
         self.deck_controller.set_brightness(self.plugin_base.original_brightness)
@@ -184,7 +187,8 @@ class IncreaseBrightness(ActionBase):
         super().__init__(action_id=action_id, action_name=action_name,
             deck_controller=deck_controller, page=page, coords=coords, plugin_base=plugin_base)
 
-        self.set_default_image(Image.open(os.path.join(self.plugin_base.PATH, "assets", "increase_brightness.png")))
+    def on_ready(self):
+        self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "increase_brightness.png"))
 
     def on_key_down(self):
         if self.plugin_base.original_brightness is None:
@@ -197,7 +201,8 @@ class DecreaseBrightness(ActionBase):
         super().__init__(action_id=action_id, action_name=action_name,
             deck_controller=deck_controller, page=page, coords=coords, plugin_base=plugin_base)
 
-        self.set_default_image(Image.open(os.path.join(self.plugin_base.PATH, "assets", "decrease_brightness.png")))
+    def on_ready(self):
+        self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "decrease_brightness.png"))
 
     def on_key_down(self):
         if self.plugin_base.original_brightness is None:
@@ -265,8 +270,8 @@ class DeckPlugin(PluginBase):
         self.register(
             plugin_name=self.lm.get("plugin.name"),
             github_repo="https://github.com/Core447/DeckPlugin",
-            plugin_version="0.1",
-            app_version="0.1.1-alpha"
+            plugin_version="1.0.0",
+            app_version="1.0.0-alpha"
         )
 
     def init_locale_manager(self):
