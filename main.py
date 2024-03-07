@@ -155,7 +155,7 @@ class SetBrightness(ActionBase):
     
     def load_config_defaults(self):
         settings = self.get_settings()
-        brightness = settings.setdefault("brightness", self.deck_controller.current_brightness)
+        brightness = settings.setdefault("brightness", self.deck_controller.brightness)
         self.brighness_scale.set_value(brightness)
         self.set_settings(settings)
 
@@ -166,8 +166,8 @@ class SetBrightness(ActionBase):
 
     def on_key_down(self):
         if self.plugin_base.original_brightness is None:
-            self.plugin_base.original_brightness = self.deck_controller.current_brightness
-        self.deck_controller.set_brightness(self.get_settings().get("brightness", self.deck_controller.current_brightness))
+            self.plugin_base.original_brightness = self.deck_controller.brightness
+        self.deck_controller.set_brightness(self.get_settings().get("brightness", self.deck_controller.brightness))
 
 class RevertBrightness(ActionBase):
     def __init__(self, action_id: str, action_name: str,
@@ -192,8 +192,8 @@ class IncreaseBrightness(ActionBase):
 
     def on_key_down(self):
         if self.plugin_base.original_brightness is None:
-            self.plugin_base.original_brightness = self.deck_controller.current_brightness
-        self.deck_controller.set_brightness(self.deck_controller.current_brightness + 10)
+            self.plugin_base.original_brightness = self.deck_controller.brightness
+        self.deck_controller.set_brightness(self.deck_controller.brightness + 10)
 
 class DecreaseBrightness(ActionBase):
     def __init__(self, action_id: str, action_name: str,
@@ -206,8 +206,8 @@ class DecreaseBrightness(ActionBase):
 
     def on_key_down(self):
         if self.plugin_base.original_brightness is None:
-            self.plugin_base.original_brightness = self.deck_controller.current_brightness
-        self.deck_controller.set_brightness(self.deck_controller.current_brightness - 10)
+            self.plugin_base.original_brightness = self.deck_controller.brightness
+        self.deck_controller.set_brightness(self.deck_controller.brightness - 10)
 
 class DeckPlugin(PluginBase):
     def __init__(self):
