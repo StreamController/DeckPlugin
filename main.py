@@ -28,7 +28,7 @@ from plugins.dev_core447_DeckPlugin.ComboRow import ComboRow
 
 
 # Import signals
-from src.backend.PluginManager import Signals
+from src.Signals import Signals
 
 class ChangePage(ActionBase):
     def __init__(self, action_id: str, action_name: str,
@@ -46,30 +46,42 @@ class ChangePage(ActionBase):
         self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "folder.png"))
 
     def get_config_rows(self) -> list:
+        ## Page selector
         self.page_model = Gtk.ListStore.new([str, str])
-        # self.page_selector = Adw.ComboRow(model=self.page_model)
-        # \Adw.ComboRow(model=self.page_model, title="Page:",
-                                        #   subtitle="Select page to swtich to")
         self.page_selector_row = ComboRow(model=self.page_model, title=self.plugin_base.lm.get("actions.change-page.drop-down-label"))
 
         self.page_selector_cell_renderer = Gtk.CellRendererText()
         self.page_selector_row.combo_box.pack_start(self.page_selector_cell_renderer, True)
         self.page_selector_row.combo_box.add_attribute(self.page_selector_cell_renderer, "text", 0)
+
+        ## Deck selector
+        self.deck_model = Gtk.ListStore.new([str, str])
+        self.deck_selector_row = ComboRow(model=self.deck_model, title=self.plugin_base.lm.get("actions.change.page.deck-drop-down-label"))
+
+        self.deck_selector_cell_renderer = Gtk.CellRendererText()
+        self.deck_selector_row.combo_box.pack_start(self.deck_selector_cell_renderer, True)
+        self.deck_selector_row.combo_box.add_attribute(self.deck_selector_cell_renderer, "text", 0)
         
         self.load_page_model()
+        self.load_deck_model()
 
         self.load_config_defaults()
 
-        # self.page_selector.connect("notify::selected-item", self.on_change_page)
-        self.page_selector_row.combo_box.connect("changed", self.on_change_page)
+        self.page_selector_row.combo_box.connect("changed", self.on_page_changed)
+        self.deck_selector_row.combo_box.connect("changed", self.on_deck_changed)
 
-        return [self.page_selector_row]
+        return [self.page_selector_row, self.deck_selector_row]
         
 
     def load_page_model(self):
         for page in gl.page_manager.get_pages():
             display_name = os.path.splitext(os.path.basename(page))[0]
             self.page_model.append([display_name, page])
+
+    def load_deck_model(self) -> None:
+        for controller in gl.deck_manager.deck_controller:
+            deck_number, deck_type = gl.app.main_win.leftArea.deck_stack.get_page_attributes(controller)
+            self.deck_model.append([deck_type, deck_number])
 
     def load_config_defaults(self):
         settings = self.get_settings()
@@ -78,18 +90,29 @@ class ChangePage(ActionBase):
         
         # Update page selector
         selected_page = settings.setdefault("selected_page", None)
-        self.set_selected(selected_page)
+        self.select_page(selected_page)
 
-    def set_selected(self, page_path: str) -> None:
+        deck_number = settings.setdefault("deck_number", None)
+        self.select_deck(deck_number)
+
+    def select_page(self, page_path: str) -> None:
         for i, row in enumerate(self.page_model):
             if row[1] == page_path:
                 self.page_selector_row.combo_box.set_active(i)
                 return
             
         self.page_selector_row.combo_box.set_active(-1)
+
+    def select_deck(self, deck_number: str) -> None:
+        for i, row in enumerate(self.deck_model):
+            if row[1] == deck_number:
+                self.deck_selector_row.combo_box.set_active(i)
+                return
+            
+        self.deck_selector_row.combo_box.set_active(-1)
         
 
-    def on_change_page(self, combo, *args):
+    def on_page_changed(self, combo, *args):
         page_path = self.page_model[combo.get_active()][1]
         
 
@@ -97,10 +120,35 @@ class ChangePage(ActionBase):
         settings["selected_page"] = page_path
         self.set_settings(settings)
 
+    def on_deck_changed(self, combo, *args):
+        deck_number = self.deck_model[combo.get_active()][1]
+        
+        settings = self.get_settings()
+        settings["deck_number"] = deck_number
+        self.set_settings(settings)
+
+    def get_deck_controller_to_use(self) -> DeckController:
+        settings = self.get_settings()
+        deck_type = settings.get("deck_number")
+
+        # Find controller
+        for controller in gl.deck_manager.deck_controller:
+            if controller.deck.get_serial_number() == deck_type:
+                return controller
+            
+        # Use own controller as fallback
+        return self.deck_controller
+
+
     def on_key_down(self):
         page_path = self.get_settings().get("selected_page")
-        page = gl.page_manager.get_page(page_path, deck_controller = self.deck_controller)
-        self.deck_controller.load_page(page)
+        if page_path is None:
+            return
+        
+        controller = self.get_deck_controller_to_use()
+
+        page = gl.page_manager.get_page(page_path, deck_controller=controller)
+        controller.load_page(page)
 
     def on_page_rename(self, old_path: str, new_path: str):
         settings = self.get_settings()
@@ -110,11 +158,11 @@ class ChangePage(ActionBase):
 
             if hasattr(self, "page_model"):
                 # Update page model
-                self.page_selector_row.combo_box.disconnect_by_func(self.on_change_page)
+                self.page_selector_row.combo_box.disconnect_by_func(self.on_page_changed)
                 self.page_model.clear()
                 self.load_page_model()
-                self.set_selected(new_path)
-                self.page_selector_row.combo_box.connect("changed", self.on_change_page)
+                self.select_page(new_path)
+                self.page_selector_row.combo_box.connect("changed", self.on_page_changed)
 
 class GoToSleep(ActionBase):
     def __init__(self, action_id: str, action_name: str,
@@ -273,6 +321,7 @@ class DeckPlugin(PluginBase):
             plugin_version="1.0.0",
             app_version="1.0.0-alpha"
         )
+        print()
 
     def init_locale_manager(self):
         self.lm = self.locale_manager

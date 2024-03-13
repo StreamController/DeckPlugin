@@ -7,5 +7,6 @@
     "actions.increase-brightness.name": "Helligkeit erhöhen",
     "actions.decrease-brightness.name": "Helligkeit verringern",
     "actions.change-page.drop-down-label": "Seite:",
-    "actions.set-brightness.scale-label": "Helligkeit:"
+    "actions.set-brightness.scale-label": "Helligkeit:",
+    "actions.change.page.deck-drop-down-label": "Deck:"
 }

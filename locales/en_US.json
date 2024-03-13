@@ -7,5 +7,6 @@
     "actions.increase-brightness.name": "Increase Brightness",
     "actions.decrease-brightness.name": "Decrease Brightness",
     "actions.change-page.drop-down-label": "Page:",
-    "actions.set-brightness.scale-label": "Brightness:"
+    "actions.set-brightness.scale-label": "Brightness:",
+    "actions.change.page.deck-drop-down-label": "Deck:"
 }
