@@ -24,7 +24,7 @@ from src.backend.DeckManagement.DeckController import DeckController
 from src.backend.PageManagement.Page import Page
 
 
-from plugins.dev_core447_DeckPlugin.ComboRow import ComboRow
+from plugins.com_core447_DeckPlugin.ComboRow import ComboRow
 
 
 # Import signals
@@ -269,7 +269,7 @@ class DeckPlugin(PluginBase):
         self.change_page_holder = ActionHolder(
             plugin_base=self,
             action_base=ChangePage,
-            action_id="dev_core447_DeckPlugin::ChangePage",
+            action_id="com_core447_DeckPlugin::ChangePage",
             action_name=self.lm.get("actions.change-page.name")
         )
         self.add_action_holder(self.change_page_holder)
@@ -277,7 +277,7 @@ class DeckPlugin(PluginBase):
         self.go_to_sleep_holder = ActionHolder(
             plugin_base=self,
             action_base=GoToSleep,
-            action_id="dev_core447_DeckPlugin::GoToSleep",
+            action_id="com_core447_DeckPlugin::GoToSleep",
             action_name=self.lm.get("actions.go-to-sleep.name")
         )
         self.add_action_holder(self.go_to_sleep_holder)
@@ -285,7 +285,7 @@ class DeckPlugin(PluginBase):
         self.change_brightness_holder = ActionHolder(
             plugin_base=self,
             action_base=SetBrightness,
-            action_id="dev_core447_DeckPlugin::ChangeBrightness",
+            action_id="com_core447_DeckPlugin::ChangeBrightness",
             action_name=self.lm.get("actions.set-brightness.name")
         )
         self.add_action_holder(self.change_brightness_holder)
@@ -293,7 +293,7 @@ class DeckPlugin(PluginBase):
         self.revert_brightness_holder = ActionHolder(
             plugin_base=self,
             action_base=RevertBrightness,
-            action_id="dev_core447_DeckPlugin::RevertBrightness",
+            action_id="com_core447_DeckPlugin::RevertBrightness",
             action_name=self.lm.get("actions.revert-brightness.name")
         )
         self.add_action_holder(self.revert_brightness_holder)
@@ -301,7 +301,7 @@ class DeckPlugin(PluginBase):
         self.increase_brightness_holder = ActionHolder(
             plugin_base=self,
             action_base=IncreaseBrightness,
-            action_id="dev_core447_DeckPlugin::IncreaseBrightness",
+            action_id="com_core447_DeckPlugin::IncreaseBrightness",
             action_name=self.lm.get("actions.increase-brightness.name")
         )
         self.add_action_holder(self.increase_brightness_holder)
@@ -309,7 +309,7 @@ class DeckPlugin(PluginBase):
         self.decrease_brightness_holder = ActionHolder(
             plugin_base=self,
             action_base=DecreaseBrightness,
-            action_id="dev_core447_DeckPlugin::DecreaseBrightness",
+            action_id="com_core447_DeckPlugin::DecreaseBrightness",
             action_name=self.lm.get("actions.decrease-brightness.name")
         )
         self.add_action_holder(self.decrease_brightness_holder)
@@ -321,7 +321,6 @@ class DeckPlugin(PluginBase):
             plugin_version="1.0.0",
             app_version="1.0.0-alpha"
         )
-        print()
 
     def init_locale_manager(self):
         self.lm = self.locale_manager
