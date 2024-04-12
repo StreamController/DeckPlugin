@@ -3,5 +3,6 @@
     "thumbnail": "store/Thumbnail.png",
     "id": "com_core447_DeckPlugin",
     "name": "Deck",
-    "description": "Control your deck - Change the brightness, pages, etc."
+    "description": "Control your deck - Change the brightness, pages, etc.",
+    "short-description": "Control your decks"
 }
