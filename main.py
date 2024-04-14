@@ -39,6 +39,8 @@ class ChangePage(ActionBase):
         self.HAS_CONFIGURATION = True
 
         self.connect(signal=Signals.PageRename, callback=self.on_page_rename)
+        self.connect(signal=Signals.PageAdd, callback=self.update_available_pages)
+        self.connect(signal=Signals.PageDelete, callback=self.update_available_pages)
 
     def on_ready(self):
         # Ensures that there is always one page selected
@@ -79,6 +81,23 @@ class ChangePage(ActionBase):
         for page in gl.page_manager.get_pages():
             display_name = os.path.splitext(os.path.basename(page))[0]
             self.page_model.append([display_name, page])
+
+    def update_available_pages(self, *args) -> None:
+        if not hasattr(self, "page_selector_row"):
+            # Skip if not in config area
+            return
+        
+        self.page_selector_row.combo_box.disconnect_by_func(self.on_page_changed)
+        
+        self.page_model.clear()
+        self.load_page_model()
+
+        # Select page
+        settings = self.get_settings()
+        selected_page = settings.setdefault("selected_page", None)
+        self.select_page(selected_page)
+
+        self.page_selector_row.combo_box.connect("changed", self.on_page_changed)
 
     def load_deck_model(self) -> None:
         for controller in gl.deck_manager.deck_controller:
