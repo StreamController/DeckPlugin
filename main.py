@@ -173,7 +173,10 @@ class ChangePage(ActionBase):
 
     def on_page_rename(self, old_path: str, new_path: str):
         settings = self.get_settings()
-        if settings.get("selected_page") == old_path:
+        set_path = settings.get("selected_page")
+        if set_path in [None, ""]:
+            return
+        if os.path.abspath(set_path) == os.path.abspath(old_path):
             settings["selected_page"] = new_path
             self.set_settings(settings)
 
