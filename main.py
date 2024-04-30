@@ -267,7 +267,7 @@ class IncreaseBrightness(ActionBase):
     def on_key_down(self):
         if self.plugin_base.original_brightness is None:
             self.plugin_base.original_brightness = self.deck_controller.brightness
-        self.deck_controller.set_brightness(self.deck_controller.brightness + 10)
+        self.deck_controller.set_brightness(min(100, self.deck_controller.brightness + 10))
 
 class DecreaseBrightness(ActionBase):
     def __init__(self, action_id: str, action_name: str,
@@ -281,7 +281,7 @@ class DecreaseBrightness(ActionBase):
     def on_key_down(self):
         if self.plugin_base.original_brightness is None:
             self.plugin_base.original_brightness = self.deck_controller.brightness
-        self.deck_controller.set_brightness(self.deck_controller.brightness - 10)
+        self.deck_controller.set_brightness(max(0, self.deck_controller.brightness - 10))
 
 class DeckPlugin(PluginBase):
     def __init__(self):
