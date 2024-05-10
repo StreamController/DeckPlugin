@@ -2,6 +2,8 @@ from src.backend.PluginManager.ActionBase import ActionBase
 from src.backend.PluginManager.PluginBase import PluginBase
 from src.backend.PluginManager.ActionHolder import ActionHolder
 
+from packaging import version
+
 # Import gtk modules
 import gi
 gi.require_version("Gtk", "4.0")
@@ -186,6 +188,53 @@ class ChangePage(ActionBase):
                 self.select_page(new_path)
                 self.page_selector_row.combo_box.connect("changed", self.on_page_changed)
 
+class ChangeState(ActionBase):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.connect(signal=Signals.RemoveState, callback=self.on_state_removed)
+
+    def on_ready(self):
+        self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "sidebar.png"), size=0.8)
+
+    def get_config_rows(self) -> list:
+        n_states = len(self.get_own_key().states)
+        self.spinner = Adw.SpinRow.new_with_range(1, n_states, 1)
+        self.spinner.set_snap_to_ticks(True)
+        self.spinner.set_title("State:")
+
+        self.load_config_defaults()
+
+        self.spinner.connect("changed", self.on_change_state)
+
+        return [self.spinner]
+    
+    def load_config_defaults(self):
+        settings = self.get_settings()
+        state = settings.setdefault("state", 0)
+        self.spinner.set_value(state + 1)
+    
+    def on_change_state(self, spinner):
+        settings = self.get_settings()
+        settings["state"] = round(spinner.get_value()) - 1
+        self.set_settings(settings)
+
+    def on_key_down(self):
+        state = self.get_settings().get("state")
+        if state == self.state:
+            return
+        self.get_own_key().set_state(state)
+
+    def on_state_removed(self, state, state_map):
+        settings = self.get_settings()
+        set_state = settings.get("state")
+        if state == set_state:
+            settings["state"] = self.state
+        else:
+            settings["state"] = state_map.get(set_state, self.state)
+
+        self.set_settings(settings)
+
 class GoToSleep(ActionBase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -327,6 +376,16 @@ class DeckPlugin(PluginBase):
             action_name=self.lm.get("actions.decrease-brightness.name")
         )
         self.add_action_holder(self.decrease_brightness_holder)
+
+        if version.parse(gl.app_version) >= version.parse("1.5.1-beta"): # backward compatibility
+            self.change_state_holder = ActionHolder(
+                plugin_base=self,
+                action_base=ChangeState,
+                min_app_version="1.5.1-beta",
+                action_id="com_core447_DeckPlugin::ChangeState",
+                action_name="Change State"
+            )
+            self.add_action_holder(self.change_state_holder)
 
         # Register plugin
         self.register(
