@@ -31,10 +31,8 @@ from plugins.com_core447_DeckPlugin.ComboRow import ComboRow
 from src.Signals import Signals
 
 class ChangePage(ActionBase):
-    def __init__(self, action_id: str, action_name: str,
-                 deck_controller: "DeckController", page: Page, coords: str, plugin_base: PluginBase):
-        super().__init__(action_id=action_id, action_name=action_name,
-            deck_controller=deck_controller, page=page, coords=coords, plugin_base=plugin_base)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         
         self.HAS_CONFIGURATION = True
 
@@ -189,10 +187,8 @@ class ChangePage(ActionBase):
                 self.page_selector_row.combo_box.connect("changed", self.on_page_changed)
 
 class GoToSleep(ActionBase):
-    def __init__(self, action_id: str, action_name: str,
-                 deck_controller: "DeckController", page: Page, coords: str, plugin_base: PluginBase):
-        super().__init__(action_id=action_id, action_name=action_name,
-            deck_controller=deck_controller, page=page, coords=coords, plugin_base=plugin_base)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
     def on_ready(self):
         self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "sleep.png"), size=0.8)
@@ -201,10 +197,8 @@ class GoToSleep(ActionBase):
         self.deck_controller.screen_saver.show()
 
 class SetBrightness(ActionBase):
-    def __init__(self, action_id: str, action_name: str,
-                 deck_controller: "DeckController", page: Page, coords: str, plugin_base: PluginBase):
-        super().__init__(action_id=action_id, action_name=action_name,
-            deck_controller=deck_controller, page=page, coords=coords, plugin_base=plugin_base)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         
         self.HAS_CONFIGURATION = True
 
@@ -244,10 +238,8 @@ class SetBrightness(ActionBase):
         self.deck_controller.set_brightness(self.get_settings().get("brightness", self.deck_controller.brightness))
 
 class RevertBrightness(ActionBase):
-    def __init__(self, action_id: str, action_name: str,
-                 deck_controller: "DeckController", page: Page, coords: str, plugin_base: PluginBase):
-        super().__init__(action_id=action_id, action_name=action_name,
-            deck_controller=deck_controller, page=page, coords=coords, plugin_base=plugin_base)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
     def on_ready(self):
         self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "light.png"))
@@ -256,10 +248,8 @@ class RevertBrightness(ActionBase):
         self.deck_controller.set_brightness(self.plugin_base.original_brightness)
 
 class IncreaseBrightness(ActionBase):
-    def __init__(self, action_id: str, action_name: str,
-                 deck_controller: "DeckController", page: Page, coords: str, plugin_base: PluginBase):
-        super().__init__(action_id=action_id, action_name=action_name,
-            deck_controller=deck_controller, page=page, coords=coords, plugin_base=plugin_base)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
     def on_ready(self):
         self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "increase_brightness.png"))
@@ -270,10 +260,8 @@ class IncreaseBrightness(ActionBase):
         self.deck_controller.set_brightness(min(100, self.deck_controller.brightness + 10))
 
 class DecreaseBrightness(ActionBase):
-    def __init__(self, action_id: str, action_name: str,
-                 deck_controller: "DeckController", page: Page, coords: str, plugin_base: PluginBase):
-        super().__init__(action_id=action_id, action_name=action_name,
-            deck_controller=deck_controller, page=page, coords=coords, plugin_base=plugin_base)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
     def on_ready(self):
         self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "decrease_brightness.png"))
