@@ -8,5 +8,6 @@
     "actions.decrease-brightness.name": "Diminuer La Luminosité",
     "actions.change-page.drop-down-label": "Page:",
     "actions.set-brightness.scale-label": "Luminosité:",
-    "actions.change.page.deck-drop-down-label": "Deck:"
+    "actions.change.page.deck-drop-down-label": "Deck:",
+    "actions.change-page.event-drop-down-label": "Event:"
 }

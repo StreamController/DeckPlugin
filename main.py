@@ -1,19 +1,16 @@
-from src.backend.PluginManager.ActionBase import ActionBase
-from src.backend.PluginManager.PluginBase import PluginBase
-from src.backend.PluginManager.ActionHolder import ActionHolder
-
+import gi
 from packaging import version
 
-# Import gtk modules
-import gi
+from src.backend.PluginManager.ActionBase import ActionBase
+from src.backend.PluginManager.ActionHolder import ActionHolder
+from src.backend.PluginManager.PluginBase import PluginBase
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gtk, Adw, Gio
+from gi.repository import Gtk, Adw
 
 import sys
 import os
-from PIL import Image
-from loguru import logger as log
 
 # Add plugin to sys.paths
 sys.path.append(os.path.dirname(__file__))
@@ -23,19 +20,17 @@ import globals as gl
 
 # Import own modules
 from src.backend.DeckManagement.DeckController import DeckController
-from src.backend.PageManagement.Page import Page
-
 
 from plugins.com_core447_DeckPlugin.ComboRow import ComboRow
-
 
 # Import signals
 from src.Signals import Signals
 
+
 class ChangePage(ActionBase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        
+
         self.HAS_CONFIGURATION = True
 
         self.connect(signal=Signals.PageRename, callback=self.on_page_rename)
@@ -52,7 +47,8 @@ class ChangePage(ActionBase):
     def get_config_rows(self) -> list:
         ## Page selector
         self.page_model = Gtk.ListStore.new([str, str])
-        self.page_selector_row = ComboRow(model=self.page_model, title=self.plugin_base.lm.get("actions.change-page.drop-down-label"))
+        self.page_selector_row = ComboRow(model=self.page_model,
+                                          title=self.plugin_base.lm.get("actions.change-page.drop-down-label"))
 
         self.page_selector_cell_renderer = Gtk.CellRendererText()
         self.page_selector_row.combo_box.pack_start(self.page_selector_cell_renderer, True)
@@ -60,22 +56,33 @@ class ChangePage(ActionBase):
 
         ## Deck selector
         self.deck_model = Gtk.ListStore.new([str, str])
-        self.deck_selector_row = ComboRow(model=self.deck_model, title=self.plugin_base.lm.get("actions.change.page.deck-drop-down-label"))
+        self.deck_selector_row = ComboRow(model=self.deck_model,
+                                          title=self.plugin_base.lm.get("actions.change.page.deck-drop-down-label"))
 
         self.deck_selector_cell_renderer = Gtk.CellRendererText()
         self.deck_selector_row.combo_box.pack_start(self.deck_selector_cell_renderer, True)
         self.deck_selector_row.combo_box.add_attribute(self.deck_selector_cell_renderer, "text", 0)
-        
+
+        ## Event selector
+        self.event_model = Gtk.ListStore.new([str, str])
+        self.event_selector_row = ComboRow(model=self.event_model,
+                                           title=self.plugin_base.lm.get("actions.change-page.event-drop-down-label"))
+
+        self.event_selector_cell_renderer = Gtk.CellRendererText()
+        self.event_selector_row.combo_box.pack_start(self.event_selector_cell_renderer, True)
+        self.event_selector_row.combo_box.add_attribute(self.event_selector_cell_renderer, "text", 0)
+
         self.load_page_model()
         self.load_deck_model()
+        self.load_event_model()
 
         self.load_config_defaults()
 
-        self.page_selector_row.combo_box.connect("changed", self.on_page_changed)
-        self.deck_selector_row.combo_box.connect("changed", self.on_deck_changed)
+        self.page_selector_row.combo_box.connect("changed", self.on_combo_changed, "selected_page")
+        self.deck_selector_row.combo_box.connect("changed", self.on_combo_changed, "deck_number")
+        self.event_selector_row.combo_box.connect("changed", self.on_combo_changed, "on_event")
 
-        return [self.page_selector_row, self.deck_selector_row]
-        
+        return [self.page_selector_row, self.deck_selector_row, self.event_selector_row]
 
     def load_page_model(self):
         for page in gl.page_manager.get_pages():
@@ -86,9 +93,9 @@ class ChangePage(ActionBase):
         if not hasattr(self, "page_selector_row"):
             # Skip if not in config area
             return
-        
-        self.page_selector_row.combo_box.disconnect_by_func(self.on_page_changed)
-        
+
+        self.page_selector_row.combo_box.disconnect_by_func(self.on_combo_changed)
+
         self.page_model.clear()
         self.load_page_model()
 
@@ -97,55 +104,47 @@ class ChangePage(ActionBase):
         selected_page = settings.setdefault("selected_page", None)
         self.select_page(selected_page)
 
-        self.page_selector_row.combo_box.connect("changed", self.on_page_changed)
+        self.page_selector_row.combo_box.connect("changed", self.on_combo_changed, "selected_page")
 
     def load_deck_model(self) -> None:
         for controller in gl.deck_manager.deck_controller:
             deck_number, deck_type = gl.app.main_win.leftArea.deck_stack.get_page_attributes(controller)
             self.deck_model.append([deck_type, deck_number])
 
+    def load_event_model(self) -> None:
+        self.event_model.append(["Key down", "key_down"])
+        self.event_model.append(["Key up after short press", "key_up"])
+        self.event_model.append(["Key hold", "key_hold_start"])
+        self.event_model.append(["Key up after hold", "key_hold_stop"])
+
     def load_config_defaults(self):
         settings = self.get_settings()
-        if settings == None:
+        if settings is None:
             return
-        
+
         # Update page selector
         selected_page = settings.setdefault("selected_page", None)
-        self.select_page(selected_page)
+        self.select_value(self.page_selector_row, self.page_model, selected_page)
 
         deck_number = settings.setdefault("deck_number", None)
-        self.select_deck(deck_number)
+        self.select_value(self.deck_selector_row, self.deck_model, deck_number)
 
-    def select_page(self, page_path: str) -> None:
-        for i, row in enumerate(self.page_model):
-            if row[1] == page_path:
-                self.page_selector_row.combo_box.set_active(i)
+        event = settings.setdefault("on_event", None)
+        self.select_value(self.event_selector_row, self.event_model, event)
+
+    def select_value(self, combo, model, value: str) -> None:
+        for i, row in enumerate(model):
+            if row[1] == value:
+                combo.combo_box.set_active(i)
                 return
-            
-        self.page_selector_row.combo_box.set_active(-1)
 
-    def select_deck(self, deck_number: str) -> None:
-        for i, row in enumerate(self.deck_model):
-            if row[1] == deck_number:
-                self.deck_selector_row.combo_box.set_active(i)
-                return
-            
-        self.deck_selector_row.combo_box.set_active(-1)
-        
+        combo.combo_box.set_active(-1)
 
-    def on_page_changed(self, combo, *args):
-        page_path = self.page_model[combo.get_active()][1]
-        
+    def on_combo_changed(self, combo, *args):
+        value = combo.get_model()[combo.get_active_iter()][1]
 
         settings = self.get_settings()
-        settings["selected_page"] = page_path
-        self.set_settings(settings)
-
-    def on_deck_changed(self, combo, *args):
-        deck_number = self.deck_model[combo.get_active()][1]
-        
-        settings = self.get_settings()
-        settings["deck_number"] = deck_number
+        settings[args[0]] = value
         self.set_settings(settings)
 
     def get_deck_controller_to_use(self) -> DeckController:
@@ -156,16 +155,39 @@ class ChangePage(ActionBase):
         for controller in gl.deck_manager.deck_controller:
             if controller.deck.get_serial_number() == deck_type:
                 return controller
-            
+
         # Use own controller as fallback
         return self.deck_controller
 
+    def on_key_down(self) -> None:
+        settings = self.get_settings()
 
-    def on_key_down(self):
+        if settings.get("on_event", "key_down") == "key_down":
+            self.change_page()
+
+    def on_key_up(self) -> None:
+        settings = self.get_settings()
+
+        if settings.get("on_event") == "key_up":
+            self.change_page()
+
+    def on_key_hold_start(self) -> None:
+        settings = self.get_settings()
+
+        if settings.get("on_event") == "key_hold_start":
+            self.change_page()
+
+    def on_key_hold_stop(self) -> None:
+        settings = self.get_settings()
+
+        if settings.get("on_event") == "key_hold_stop":
+            self.change_page()
+
+    def change_page(self):
         page_path = self.get_settings().get("selected_page")
         if page_path is None:
             return
-        
+
         controller = self.get_deck_controller_to_use()
 
         page = gl.page_manager.get_page(page_path, deck_controller=controller)
@@ -188,6 +210,7 @@ class ChangePage(ActionBase):
                 self.select_page(new_path)
                 self.page_selector_row.combo_box.connect("changed", self.on_page_changed)
 
+
 class ChangeState(ActionBase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -208,12 +231,12 @@ class ChangeState(ActionBase):
         self.spinner.connect("changed", self.on_change_state)
 
         return [self.spinner]
-    
+
     def load_config_defaults(self):
         settings = self.get_settings()
         state = settings.setdefault("state", 0)
         self.spinner.set_value(state + 1)
-    
+
     def on_change_state(self, spinner):
         settings = self.get_settings()
         settings["state"] = round(spinner.get_value()) - 1
@@ -235,6 +258,7 @@ class ChangeState(ActionBase):
 
         self.set_settings(settings)
 
+
 class GoToSleep(ActionBase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -245,10 +269,11 @@ class GoToSleep(ActionBase):
     def on_key_down(self):
         self.deck_controller.screen_saver.show()
 
+
 class SetBrightness(ActionBase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        
+
         self.HAS_CONFIGURATION = True
 
     def on_ready(self):
@@ -260,7 +285,8 @@ class SetBrightness(ActionBase):
         self.brighness_scale.set_draw_value(True)
         self.brightness_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True,
                                       margin_top=5, margin_bottom=5, margin_start=5, margin_end=5)
-        self.brightness_box.append(Gtk.Label(label=self.plugin_base.lm.get("actions.set-brightness.scale-label"), margin_bottom=5, xalign=0))
+        self.brightness_box.append(
+            Gtk.Label(label=self.plugin_base.lm.get("actions.set-brightness.scale-label"), margin_bottom=5, xalign=0))
         self.brightness_box.append(self.brighness_scale)
         self.brightness_row.set_child(self.brightness_box)
 
@@ -269,7 +295,7 @@ class SetBrightness(ActionBase):
         self.brighness_scale.connect("value-changed", self.on_change_brightness)
 
         return [self.brightness_row]
-    
+
     def load_config_defaults(self):
         settings = self.get_settings()
         brightness = settings.setdefault("brightness", self.deck_controller.brightness)
@@ -286,6 +312,7 @@ class SetBrightness(ActionBase):
             self.plugin_base.original_brightness = self.deck_controller.brightness
         self.deck_controller.set_brightness(self.get_settings().get("brightness", self.deck_controller.brightness))
 
+
 class RevertBrightness(ActionBase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -295,6 +322,7 @@ class RevertBrightness(ActionBase):
 
     def on_key_down(self):
         self.deck_controller.set_brightness(self.plugin_base.original_brightness)
+
 
 class IncreaseBrightness(ActionBase):
     def __init__(self, *args, **kwargs):
@@ -308,6 +336,7 @@ class IncreaseBrightness(ActionBase):
             self.plugin_base.original_brightness = self.deck_controller.brightness
         self.deck_controller.set_brightness(min(100, self.deck_controller.brightness + 10))
 
+
 class DecreaseBrightness(ActionBase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -319,6 +348,7 @@ class DecreaseBrightness(ActionBase):
         if self.plugin_base.original_brightness is None:
             self.plugin_base.original_brightness = self.deck_controller.brightness
         self.deck_controller.set_brightness(max(0, self.deck_controller.brightness - 10))
+
 
 class DeckPlugin(PluginBase):
     def __init__(self):
@@ -377,7 +407,7 @@ class DeckPlugin(PluginBase):
         )
         self.add_action_holder(self.decrease_brightness_holder)
 
-        if version.parse(gl.app_version) >= version.parse("1.5.1-beta"): # backward compatibility
+        if version.parse(gl.app_version) >= version.parse("1.5.1-beta"):  # backward compatibility
             self.change_state_holder = ActionHolder(
                 plugin_base=self,
                 action_base=ChangeState,
