@@ -1,3 +1,5 @@
+from src.backend.DeckManagement.InputIdentifier import Input
+from src.backend.PluginManager.ActionInputSupport import ActionInputSupport
 from src.backend.PluginManager.ActionBase import ActionBase
 from src.backend.PluginManager.PluginBase import PluginBase
 from src.backend.PluginManager.ActionHolder import ActionHolder
@@ -198,7 +200,7 @@ class ChangeState(ActionBase):
         self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "sidebar.png"), size=0.8)
 
     def get_config_rows(self) -> list:
-        n_states = len(self.get_own_key().states)
+        n_states = len(self.get_input().states)
         self.spinner = Adw.SpinRow.new_with_range(1, n_states, 1)
         self.spinner.set_snap_to_ticks(True)
         self.spinner.set_title("State:")
@@ -223,7 +225,7 @@ class ChangeState(ActionBase):
         state = self.get_settings().get("state")
         if state == self.state:
             return
-        self.get_own_key().set_state(state)
+        self.get_input().set_state(state)
 
     def on_state_removed(self, state, state_map):
         settings = self.get_settings()
@@ -383,7 +385,12 @@ class DeckPlugin(PluginBase):
                 action_base=ChangeState,
                 min_app_version="1.5.1-beta",
                 action_id="com_core447_DeckPlugin::ChangeState",
-                action_name="Change State"
+                action_name="Change State",
+                action_support={
+                    Input.Key: ActionInputSupport.SUPPORTED,
+                    Input.Dial: ActionInputSupport.UNTESTED,
+                    Input.Touchscreen: ActionInputSupport.NO
+                }
             )
             self.add_action_holder(self.change_state_holder)
 
