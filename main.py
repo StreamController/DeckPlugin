@@ -334,48 +334,78 @@ class DeckPlugin(PluginBase):
         self.change_page_holder = ActionHolder(
             plugin_base=self,
             action_base=ChangePage,
-            action_id="com_core447_DeckPlugin::ChangePage",
-            action_name=self.lm.get("actions.change-page.name")
+            action_id_suffix="ChangePage",
+            action_name=self.lm.get("actions.change-page.name"),
+            action_support={
+                Input.Key: ActionInputSupport.SUPPORTED,
+                Input.Dial: ActionInputSupport.SUPPORTED,
+                Input.Touchscreen: ActionInputSupport.UNTESTED
+            }
         )
         self.add_action_holder(self.change_page_holder)
 
         self.go_to_sleep_holder = ActionHolder(
             plugin_base=self,
             action_base=GoToSleep,
-            action_id="com_core447_DeckPlugin::GoToSleep",
-            action_name=self.lm.get("actions.go-to-sleep.name")
+            action_id_suffix="GoToSleep",
+            action_name=self.lm.get("actions.go-to-sleep.name"),
+            action_support={
+                Input.Key: ActionInputSupport.SUPPORTED,
+                Input.Dial: ActionInputSupport.SUPPORTED,
+                Input.Touchscreen: ActionInputSupport.UNTESTED
+            }
         )
         self.add_action_holder(self.go_to_sleep_holder)
 
         self.change_brightness_holder = ActionHolder(
             plugin_base=self,
             action_base=SetBrightness,
-            action_id="com_core447_DeckPlugin::ChangeBrightness",
-            action_name=self.lm.get("actions.set-brightness.name")
+            action_id_suffix="ChangeBrightness",
+            action_name=self.lm.get("actions.set-brightness.name"),
+            action_support={
+                Input.Key: ActionInputSupport.SUPPORTED,
+                Input.Dial: ActionInputSupport.SUPPORTED,
+                Input.Touchscreen: ActionInputSupport.UNTESTED
+            }
         )
         self.add_action_holder(self.change_brightness_holder)
 
         self.revert_brightness_holder = ActionHolder(
             plugin_base=self,
             action_base=RevertBrightness,
-            action_id="com_core447_DeckPlugin::RevertBrightness",
-            action_name=self.lm.get("actions.revert-brightness.name")
+            action_id_suffix="RevertBrightness",
+            action_name=self.lm.get("actions.revert-brightness.name"),
+            action_support={
+                Input.Key: ActionInputSupport.SUPPORTED,
+                Input.Dial: ActionInputSupport.SUPPORTED,
+                Input.Touchscreen: ActionInputSupport.UNTESTED
+            }
         )
         self.add_action_holder(self.revert_brightness_holder)
 
         self.increase_brightness_holder = ActionHolder(
             plugin_base=self,
             action_base=IncreaseBrightness,
-            action_id="com_core447_DeckPlugin::IncreaseBrightness",
-            action_name=self.lm.get("actions.increase-brightness.name")
+            action_id_suffix="IncreaseBrightness",
+            action_name=self.lm.get("actions.increase-brightness.name"),
+            action_support={
+                Input.Key: ActionInputSupport.SUPPORTED,
+                Input.Dial: ActionInputSupport.SUPPORTED,
+                Input.Touchscreen: ActionInputSupport.UNTESTED
+            }
         )
         self.add_action_holder(self.increase_brightness_holder)
 
         self.decrease_brightness_holder = ActionHolder(
             plugin_base=self,
             action_base=DecreaseBrightness,
-            action_id="com_core447_DeckPlugin::DecreaseBrightness",
-            action_name=self.lm.get("actions.decrease-brightness.name")
+            action_id_suffix="DecreaseBrightness",
+            action_name=self.lm.get("actions.decrease-brightness.name"),
+            action_support={
+                Input.Key: ActionInputSupport.SUPPORTED,
+                Input.Dial: ActionInputSupport.SUPPORTED,
+                Input.Touchscreen: ActionInputSupport.UNTESTED
+            }
         )
         self.add_action_holder(self.decrease_brightness_holder)
 
@@ -384,12 +414,12 @@ class DeckPlugin(PluginBase):
                 plugin_base=self,
                 action_base=ChangeState,
                 min_app_version="1.5.1-beta",
-                action_id="com_core447_DeckPlugin::ChangeState",
+                action_id_suffix="ChangeState",
                 action_name="Change State",
                 action_support={
                     Input.Key: ActionInputSupport.SUPPORTED,
-                    Input.Dial: ActionInputSupport.UNTESTED,
-                    Input.Touchscreen: ActionInputSupport.NO
+                    Input.Dial: ActionInputSupport.SUPPORTED,
+                    Input.Touchscreen: ActionInputSupport.UNSUPPORTED
                 }
             )
             self.add_action_holder(self.change_state_holder)
