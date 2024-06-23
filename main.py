@@ -444,11 +444,11 @@ class DeckPlugin(PluginBase):
         )
         self.add_action_holder(self.adjust_brightness_holder)
 
-        if version.parse(gl.app_version) >= version.parse("1.5.1-beta"): # backward compatibility
+        if version.parse(gl.app_version) >= version.parse("1.5.0-beta.5"): # backward compatibility
             self.change_state_holder = ActionHolder(
                 plugin_base=self,
                 action_base=ChangeState,
-                min_app_version="1.5.1-beta",
+                min_app_version="1.5.0-beta.5",
                 action_id_suffix="ChangeState",
                 action_name="Change State",
                 action_support={
