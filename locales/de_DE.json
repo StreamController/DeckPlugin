@@ -6,6 +6,6 @@
     "actions.revert-brightness.name": "Helligkeit zurücksetzen",
     "actions.adjust-brightness.name": "Helligkeit anpassen",
     "actions.change-page.drop-down-label": "Seite:",
-    "actions.set-brightness.scale-label": "Helligkeit:",
+    "actions.set-brightness.label": "Helligkeit:",
     "actions.change.page.deck-drop-down-label": "Deck:"
 }

@@ -257,36 +257,31 @@ class SetBrightness(ActionBase):
         self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "light.png"))
 
     def get_config_rows(self) -> list:
-        self.brightness_row = Adw.PreferencesRow(title="Brightness:")
-        self.brighness_scale = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, 0, 100, 1)
-        self.brighness_scale.set_draw_value(True)
-        self.brightness_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True,
-                                      margin_top=5, margin_bottom=5, margin_start=5, margin_end=5)
-        self.brightness_box.append(Gtk.Label(label=self.plugin_base.lm.get("actions.set-brightness.scale-label"), margin_bottom=5, xalign=0))
-        self.brightness_box.append(self.brighness_scale)
-        self.brightness_row.set_child(self.brightness_box)
+        self.brightness_row = Adw.SpinRow.new_with_range(0, 100, 1)
+        self.brightness_row.set_title(self.plugin_base.lm.get("actions.set-brightness.label"))
 
-        self.load_config_defaults()
+        self.load_config_values()
 
-        self.brighness_scale.connect("value-changed", self.on_change_brightness)
+        self.brightness_row.connect("changed", self.on_brightness_changed)
 
         return [self.brightness_row]
     
-    def load_config_defaults(self):
+    def load_config_values(self):
         settings = self.get_settings()
-        brightness = settings.setdefault("brightness", self.deck_controller.brightness)
-        self.brighness_scale.set_value(brightness)
-        self.set_settings(settings)
+        brightness = settings.get("brightness", 50)
+        brightness = min(max(brightness, 0), 100)
+        self.brightness_row.set_value(brightness)
 
-    def on_change_brightness(self, scale, *args):
+    def on_brightness_changed(self, spin, *args):
         settings = self.get_settings()
-        settings["brightness"] = scale.get_value()
+        settings["brightness"] = spin.get_value()
         self.set_settings(settings)
 
     def on_key_down(self):
-        if self.plugin_base.original_brightness is None:
-            self.plugin_base.original_brightness = self.deck_controller.brightness
-        self.deck_controller.set_brightness(self.get_settings().get("brightness", self.deck_controller.brightness))
+        settings = self.get_settings()
+        brightness = settings.get("brightness", 50)
+        brightness = min(max(brightness, 0), 100)
+        self.deck_controller.set_brightness(brightness)
 
 class AdjustBrightness(ActionBase):
     def __init__(self, *args, **kwargs):
@@ -393,8 +388,6 @@ class AdjustBrightness(ActionBase):
 class DeckPlugin(PluginBase):
     def __init__(self):
         super().__init__()
-
-        self.original_brightness = None
 
         self.init_locale_manager()
 
