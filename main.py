@@ -288,39 +288,107 @@ class SetBrightness(ActionBase):
             self.plugin_base.original_brightness = self.deck_controller.brightness
         self.deck_controller.set_brightness(self.get_settings().get("brightness", self.deck_controller.brightness))
 
-class RevertBrightness(ActionBase):
+class AdjustBrightness(ActionBase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def on_ready(self):
-        self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "light.png"))
-
-    def on_key_down(self):
-        self.deck_controller.set_brightness(self.plugin_base.original_brightness)
-
-class IncreaseBrightness(ActionBase):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        self.old_path: str = None
+        self.old_label_values: tuple[int, int, int] = None
 
     def on_ready(self):
-        self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "increase_brightness.png"))
+        self.old_path = None
+        self.update_media()
+        self.update_label()
+
+    def on_tick(self):
+        self.update_label()
+
+    def update_media(self):
+        adjust = self.get_settings().get("adjust", 0)
+        if adjust >= 0:
+            path = "increase_brightness.png"
+        else:
+            path = "decrease_brightness.png"
+
+        if self.old_path == path:
+            return
+        self.old_path = path
+
+        self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", path))
+
+    def update_label(self, brightness: int = None, min_brightness: int = None, max_brightness: int = None, adjust: int = None):
+        if brightness is None:
+            brightness = self.deck_controller.brightness
+        if None in (min_brightness, max_brightness, adjust):
+            settings = self.get_settings()
+            if min_brightness is None:
+                min_brightness = settings.get("min_brightness", 0)
+            if max_brightness is None:
+                max_brightness = 100
+            if adjust is None:
+                adjust = settings.get("adjust", 0)
+
+        if (brightness, min_brightness, max_brightness, adjust) == self.old_label_values:
+            return
+        self.old_label_values = (brightness, min_brightness, max_brightness, adjust)
+
+        if (brightness >= max_brightness) and (adjust > 0):
+            self.set_bottom_label("Max")
+        elif (brightness <= min_brightness) and (adjust < 0):
+            self.set_bottom_label("Min")
+        else:
+            self.set_bottom_label(None)
+
+    def get_config_rows(self) -> list:
+        self.adjust_row = Adw.SpinRow.new_with_range(-100, 100, 1)
+        self.adjust_row.set_title("Change brightness by")
+        self.adjust_row.set_subtitle("Change screen brightness (percentage points)")
+
+        self.min_brightness_row = Adw.SpinRow.new_with_range(0, 100, 1)
+        self.min_brightness_row.set_title("Minimum brightness")
+        self.min_brightness_row.set_subtitle("Minimum screen brightness")
+
+        self.load_config_values()
+
+        self.adjust_row.connect("changed", self.on_change_brightness)
+        self.min_brightness_row.connect("changed", self.on_change_min_brightness)
+
+        return [self.adjust_row, self.min_brightness_row]
+
+    def load_config_values(self):
+        settings = self.get_settings()
+        self.adjust_row.set_value(settings.get("adjust", 0))
+        self.min_brightness_row.set_value(settings.get("min_brightness", 0))
+
+    def on_change_brightness(self, spin, *args):
+        settings = self.get_settings()
+        settings["adjust"] = int(spin.get_value())
+        self.set_settings(settings)
+
+        self.update_media()
+
+    def on_change_min_brightness(self, spin, *args):
+        settings = self.get_settings()
+        settings["min_brightness"] = int(spin.get_value())
+        self.set_settings(settings)
 
     def on_key_down(self):
-        if self.plugin_base.original_brightness is None:
-            self.plugin_base.original_brightness = self.deck_controller.brightness
-        self.deck_controller.set_brightness(min(100, self.deck_controller.brightness + 10))
+        settings = self.get_settings()
+        adjust = settings.get("adjust", 0)
+        adjust = min(max(adjust, -100), 100)
+        new_brightness = self.deck_controller.brightness + adjust
+        new_brightness = min(max(new_brightness, 0), 100)
 
-class DecreaseBrightness(ActionBase):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        min_brightness = settings.get("min_brightness", 0)
+        new_brightness = max(new_brightness, min_brightness)
 
-    def on_ready(self):
-        self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "decrease_brightness.png"))
-
-    def on_key_down(self):
-        if self.plugin_base.original_brightness is None:
-            self.plugin_base.original_brightness = self.deck_controller.brightness
-        self.deck_controller.set_brightness(max(0, self.deck_controller.brightness - 10))
+        self.deck_controller.set_brightness(new_brightness)
+        self.update_label(
+            brightness=new_brightness,
+            min_brightness=min_brightness,
+            max_brightness=100,
+            adjust=adjust
+        )
 
 class DeckPlugin(PluginBase):
     def __init__(self):
@@ -370,44 +438,18 @@ class DeckPlugin(PluginBase):
         )
         self.add_action_holder(self.change_brightness_holder)
 
-        self.revert_brightness_holder = ActionHolder(
+        self.adjust_brightness_holder = ActionHolder(
             plugin_base=self,
-            action_base=RevertBrightness,
-            action_id_suffix="RevertBrightness",
-            action_name=self.lm.get("actions.revert-brightness.name"),
+            action_base=AdjustBrightness,
+            action_id_suffix="AdjustBrightness",
+            action_name=self.lm.get("actions.adjust-brightness.name"),
             action_support={
                 Input.Key: ActionInputSupport.SUPPORTED,
                 Input.Dial: ActionInputSupport.SUPPORTED,
                 Input.Touchscreen: ActionInputSupport.UNTESTED
             }
         )
-        self.add_action_holder(self.revert_brightness_holder)
-
-        self.increase_brightness_holder = ActionHolder(
-            plugin_base=self,
-            action_base=IncreaseBrightness,
-            action_id_suffix="IncreaseBrightness",
-            action_name=self.lm.get("actions.increase-brightness.name"),
-            action_support={
-                Input.Key: ActionInputSupport.SUPPORTED,
-                Input.Dial: ActionInputSupport.SUPPORTED,
-                Input.Touchscreen: ActionInputSupport.UNTESTED
-            }
-        )
-        self.add_action_holder(self.increase_brightness_holder)
-
-        self.decrease_brightness_holder = ActionHolder(
-            plugin_base=self,
-            action_base=DecreaseBrightness,
-            action_id_suffix="DecreaseBrightness",
-            action_name=self.lm.get("actions.decrease-brightness.name"),
-            action_support={
-                Input.Key: ActionInputSupport.SUPPORTED,
-                Input.Dial: ActionInputSupport.SUPPORTED,
-                Input.Touchscreen: ActionInputSupport.UNTESTED
-            }
-        )
-        self.add_action_holder(self.decrease_brightness_holder)
+        self.add_action_holder(self.adjust_brightness_holder)
 
         if version.parse(gl.app_version) >= version.parse("1.5.1-beta"): # backward compatibility
             self.change_state_holder = ActionHolder(

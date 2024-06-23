@@ -4,8 +4,7 @@
     "actions.go-to-sleep.name": "Bildschirmschoner Starten",
     "actions.set-brightness.name": "Helligkeit Ändern",
     "actions.revert-brightness.name": "Helligkeit zurücksetzen",
-    "actions.increase-brightness.name": "Helligkeit erhöhen",
-    "actions.decrease-brightness.name": "Helligkeit verringern",
+    "actions.adjust-brightness.name": "Helligkeit anpassen",
     "actions.change-page.drop-down-label": "Seite:",
     "actions.set-brightness.scale-label": "Helligkeit:",
     "actions.change.page.deck-drop-down-label": "Deck:"
