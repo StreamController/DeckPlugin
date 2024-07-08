@@ -1,3 +1,4 @@
+import threading
 from src.backend.DeckManagement.InputIdentifier import Input
 from src.backend.PluginManager.ActionInputSupport import ActionInputSupport
 from src.backend.PluginManager.ActionBase import ActionBase
@@ -205,27 +206,49 @@ class ChangeState(ActionBase):
         self.spinner.set_snap_to_ticks(True)
         self.spinner.set_title("State:")
 
+        self.return_timeout = Adw.SpinRow.new_with_range(0, 60, 0.1)
+        self.return_timeout.set_title("Return timeout (0 to disable):")
+
         self.load_config_defaults()
 
         self.spinner.connect("changed", self.on_change_state)
+        self.return_timeout.connect("changed", self.on_return_timeout_changed)
 
-        return [self.spinner]
+        return [self.spinner, self.return_timeout]
     
     def load_config_defaults(self):
         settings = self.get_settings()
         state = settings.setdefault("state", 0)
         self.spinner.set_value(state + 1)
+
+        self.return_timeout.set_value(settings.get("return_timeout", 0))
     
     def on_change_state(self, spinner):
         settings = self.get_settings()
         settings["state"] = round(spinner.get_value()) - 1
         self.set_settings(settings)
 
+    def on_return_timeout_changed(self, spin, *args):
+        settings = self.get_settings()
+        settings["return_timeout"] = round(spin.get_value(), 1)
+        self.set_settings(settings)
+
     def on_key_down(self):
-        state = self.get_settings().get("state")
+        settings = self.get_settings()
+        timeout = settings.get("return_timeout")
+        if timeout is not None:
+            if round(timeout, 1) > 0:
+                timer = threading.Timer(timeout, self.get_input().set_state, args=[self.state])
+                timer.setName("ReturnTimer")
+                timer.setDaemon(True)
+                timer.start()
+
+
+        state = settings.get("state")
         if state == self.state:
             return
         self.get_input().set_state(state)
+
 
     def on_state_removed(self, state, state_map):
         settings = self.get_settings()
