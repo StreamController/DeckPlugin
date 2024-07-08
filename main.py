@@ -68,6 +68,9 @@ class ChangePage(ActionBase):
         self.deck_selector_cell_renderer = Gtk.CellRendererText()
         self.deck_selector_row.combo_box.pack_start(self.deck_selector_cell_renderer, True)
         self.deck_selector_row.combo_box.add_attribute(self.deck_selector_cell_renderer, "text", 0)
+
+        self.return_timeout = Adw.SpinRow.new_with_range(0, 60, 0.1)
+        self.return_timeout.set_title("Return timeout (0 to disable):")
         
         self.load_page_model()
         self.load_deck_model()
@@ -76,8 +79,9 @@ class ChangePage(ActionBase):
 
         self.page_selector_row.combo_box.connect("changed", self.on_page_changed)
         self.deck_selector_row.combo_box.connect("changed", self.on_deck_changed)
+        self.return_timeout.connect("changed", self.on_return_timeout_changed)
 
-        return [self.page_selector_row, self.deck_selector_row]
+        return [self.page_selector_row, self.deck_selector_row, self.return_timeout]
         
 
     def load_page_model(self):
@@ -118,6 +122,13 @@ class ChangePage(ActionBase):
 
         deck_number = settings.setdefault("deck_number", None)
         self.select_deck(deck_number)
+
+        self.return_timeout.set_value(settings.get("return_timeout", 0))
+
+    def on_return_timeout_changed(self, spin, *args):
+        settings = self.get_settings()
+        settings["return_timeout"] = round(spin.get_value(), 1)
+        self.set_settings(settings)
 
     def select_page(self, page_path: str) -> None:
         for i, row in enumerate(self.page_model):
@@ -165,7 +176,8 @@ class ChangePage(ActionBase):
 
 
     def on_key_down(self):
-        page_path = self.get_settings().get("selected_page")
+        settings = self.get_settings()
+        page_path = settings.get("selected_page")
         if page_path is None:
             return
         
@@ -173,6 +185,15 @@ class ChangePage(ActionBase):
 
         page = gl.page_manager.get_page(page_path, deck_controller=controller)
         controller.load_page(page)
+
+        timeout = settings.get("return_timeout", 0)
+        if controller.active_page is not None:
+            if timeout is not None:
+                if round(timeout, 1) > 0:
+                    timer = threading.Timer(timeout, controller.load_page, args=[self.page])
+                    timer.setDaemon(True)
+                    timer.setName("ReturnTimer")
+                    timer.start()
 
     def on_page_rename(self, old_path: str, new_path: str):
         settings = self.get_settings()
