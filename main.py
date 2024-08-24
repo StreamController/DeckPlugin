@@ -1,4 +1,5 @@
 import threading
+from GtkHelper.ItemListComboRow import ItemListComboRow, ItemListComboRowListItem
 from src.backend.DeckManagement.InputIdentifier import Input
 from src.backend.PluginManager.ActionInputSupport import ActionInputSupport
 from src.backend.PluginManager.ActionBase import ActionBase
@@ -221,9 +222,23 @@ class ChangeState(ActionBase):
     def on_ready(self):
         self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "sidebar.png"), size=0.8)
 
+    def update_spinner_max_value(self):
+        controller_input = self.get_controller_input()
+        n_states = 1
+        if controller_input is not None:
+            n_states = len(controller_input.states)
+        
+        self.spinner.set_range(1, n_states)
+
+
     def get_config_rows(self) -> list:
-        n_states = len(self.get_input().states)
-        self.spinner = Adw.SpinRow.new_with_range(1, n_states, 1)
+        # self.spinner = Adw.SpinRow.new_with_range(1, n_states, 1)
+        self.spinner = Adw.SpinRow(snap_to_ticks=True, title="State:")
+        self.spinner.set_adjustment(Gtk.Adjustment(
+            lower=1,
+            step_increment=1,
+            upper=1
+        ))
         self.spinner.set_snap_to_ticks(True)
         self.spinner.set_title("State:")
 
@@ -266,12 +281,22 @@ class ChangeState(ActionBase):
 
 
         state = settings.get("state")
-        if state == self.state:
+
+        controller_input = self.get_controller_input()
+        if controller_input is None:
             return
-        self.get_input().set_state(state)
+        
+        if controller_input.state == state:
+            return
+        
+        log.info(f"Creating {len(controller_input.states) - state} new states")
+        for i in range(len(controller_input.states), state + 1): # +1 because range is exclusive
+            controller_input.add_new_state()
+        
+        controller_input.set_state(state)
 
-
-    def on_state_removed(self, state, state_map):
+    def on_state_removed(self, state, state_map, *args):
+        return # TODO: Add identifier support with next app release, also remove *args
         settings = self.get_settings()
         set_state = settings.get("state")
         if state == set_state:
@@ -280,6 +305,176 @@ class ChangeState(ActionBase):
             settings["state"] = state_map.get(set_state, self.state)
 
         self.set_settings(settings)
+
+    def get_custom_config_area(self):
+        self.target_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+
+        self.target_stack = Gtk.Stack()
+
+        self.target_stack.add_titled(This(self), "this", "This")
+        self.target_stack.add_titled(Single(self), "single", "Single")
+        self.target_stack.add_titled(Gtk.Label(), "r/c", "Rows / Columns")
+
+        self.target_header = Gtk.Label(label="Target:", css_classes=["title-2"], margin_bottom=10, xalign=0)
+        self.target_box.append(self.target_header)
+
+        self.target_switcher = Gtk.StackSwitcher(stack=self.target_stack, margin_bottom=8)
+        self.target_box.append(self.target_switcher)
+
+        self.target_box.append(self.target_stack)
+
+        self.load_custom_config_defaults()
+        self.target_stack.connect("notify::visible-child-name", self.on_switch)
+
+        return self.target_box
+    
+    def on_switch(self, stack, name):
+        settings = self.get_settings()
+        settings["target"] = self.target_stack.get_visible_child_name()
+        self.set_settings(settings)
+
+        self.update_spinner_max_value()
+    
+    def load_custom_config_defaults(self):
+        settings = self.get_settings()
+        target = settings.get("target", "this")
+        try:
+            self.target_stack.set_visible_child_name(target)
+        except Exception as e:
+            log.exception(e)
+            self.target_stack.set_visible_child_name("this")
+        
+        self.update_spinner_max_value()
+    
+    def get_deck_controller_to_use(self) -> DeckController:
+        settings = self.get_settings()
+        deck_type = settings.get("deck_number")
+
+        # Find controller
+        for controller in gl.deck_manager.deck_controller:
+            if controller.deck.get_serial_number() == deck_type:
+                return controller
+            
+        # Use own controller as fallback
+        return self.deck_controller
+    
+    def get_controller_input(self):
+        controller = self.get_deck_controller_to_use()
+        if controller is None:
+            return
+        
+        settings = self.get_settings()
+        
+        if settings.get("target") == "this":
+            return self.get_input()
+        elif settings.get("target") == "single":
+            input_identifier = Input.FromTypeIdentifier(
+                input_type=settings.get("input_type", "keys"),
+                json_identifier=settings.get("input_identifier", "0x0")
+            )
+
+            return controller.get_input(input_identifier)
+
+
+class This(Gtk.Label):
+    def __init__(self, change_stage: ChangeState):
+        self.change_stage = change_stage
+        super().__init__(label="This input")
+
+class Single(Gtk.Box):
+    def __init__(self, change_stage: ChangeState):
+        self.change_state = change_stage
+        # super().__init__(halign=Gtk.Align.CENTER, hexpand=True)
+        super().__init__(hexpand=True)
+
+        self.clamp = Adw.Clamp()
+        # self.append(self.clamp)
+
+        self.p_group = Adw.PreferencesGroup(hexpand=True)
+        # self.clamp.set_child(self.p_group)
+        self.append(self.p_group)
+
+        self.decks = []
+        for controller in gl.deck_manager.deck_controller:
+            deck_number, deck_type = gl.app.main_win.leftArea.deck_stack.get_page_attributes(controller)
+            self.decks.append(ItemListComboRowListItem(key=deck_number, name=deck_type))
+
+        self.deck_row = ItemListComboRow(items=self.decks)
+        self.deck_row.connect("notify::selected", self.on_deck_changed)
+        self.deck_row.set_title("Deck")
+
+        self.inputs = []
+        self.input_type_row = ItemListComboRow(items=self.inputs)
+        self.input_type_row.connect("notify::selected", self.on_input_type_changed)
+        self.load_input_types()
+        self.input_type_row.set_title("Input type")
+
+        self.input_identifiers = []
+        self.input_identifier_row = ItemListComboRow(items=self.input_identifiers)
+        self.input_identifier_row.connect("notify::selected", self.on_input_identifier_changed)
+        self.load_input_identifiers()
+        self.input_identifier_row.set_title("Input identifier")
+        self.input_identifier_row.set_subtitle("keys: (XxY) starting at 0")
+
+        self.p_group.add(self.deck_row)
+        self.p_group.add(self.input_type_row)
+        self.p_group.add(self.input_identifier_row)
+
+    def load_input_types(self, disconnect=True):
+        if disconnect:
+            self.input_type_row.disconnect_by_func(self.on_input_type_changed)
+
+        self.inputs = []
+        controller = self.change_state.get_deck_controller_to_use()
+        for c_input in controller.inputs.keys():
+            if len(controller.inputs[c_input]) == 0:
+                continue
+            self.inputs.append(ItemListComboRowListItem(key=c_input.input_type, name=c_input.input_type))
+        self.input_type_row.set_items(self.inputs)
+
+        if disconnect:
+            self.input_type_row.connect("notify::selected", self.on_input_type_changed)
+
+    def load_input_identifiers(self, disconnect=True):
+        if disconnect:
+            self.input_identifier_row.disconnect_by_func(self.on_input_identifier_changed)
+
+        self.input_identifiers = []
+        controller = self.change_state.get_deck_controller_to_use()
+
+        settings = self.change_state.get_settings()
+        input_type = settings.get("input_type", "keys")
+
+        if input_type in Input.KeyTypes:
+            for i in controller.inputs.get(Input.All[Input.KeyTypes.index(input_type)], []):
+                if not i.enable_states:
+                    continue
+                self.input_identifiers.append(ItemListComboRowListItem(key=i.identifier.json_identifier, name=i.identifier.json_identifier))
+        self.input_identifier_row.set_items(self.input_identifiers)
+
+        if disconnect:
+            self.input_identifier_row.connect("notify::selected", self.on_input_identifier_changed)
+
+    def on_deck_changed(self, combo, *args):
+        settings = self.change_state.get_settings()
+        settings["deck_number"] = combo.get_selected_item().key
+        self.change_state.set_settings(settings)
+        self.load_input_types(disconnect=True)
+        self.on_input_type_changed(self.input_type_row)
+
+    def on_input_type_changed(self, combo, *args):
+        settings = self.change_state.get_settings()
+        settings["input_type"] = combo.get_selected_item().key
+        self.change_state.set_settings(settings)
+        self.load_input_identifiers(disconnect=True)
+        self.on_input_identifier_changed(self.input_identifier_row)
+
+    def on_input_identifier_changed(self, combo, *args):
+        settings = self.change_state.get_settings()
+        settings["input_identifier"] = combo.get_selected_item().key
+        self.change_state.set_settings(settings)
+        self.change_state.update_spinner_max_value()
+
 
 class GoToSleep(ActionBase):
     def __init__(self, *args, **kwargs):
