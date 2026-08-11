@@ -2,6 +2,7 @@
     "plugin.name": "Deck",
     "actions.change-page.name": "Changer La Page",
     "actions.go-to-sleep.name": "Activer Le Mode Veille",
+    "actions.go-to-previous-page.name": "Revenir À La Page Précédente",
     "actions.set-brightness.name": "Régler La Luminosité",
     "actions.revert-brightness.name": "Rétablir La Luminosité",
     "actions.adjust-brightness.name": "Changer La Luminosité",

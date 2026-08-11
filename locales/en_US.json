@@ -2,6 +2,7 @@
     "plugin.name": "Deck",
     "actions.change-page.name": "Change Page",
     "actions.go-to-sleep.name": "Go To Sleep",
+    "actions.go-to-previous-page.name": "Go To Previous Page",
     "actions.set-brightness.name": "Set Brightness",
     "actions.revert-brightness.name": "Revert Brightness",
     "actions.adjust-brightness.name": "Adjust Brightness",

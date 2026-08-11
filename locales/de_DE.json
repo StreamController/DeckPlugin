@@ -2,6 +2,7 @@
     "plugin.name": "Deck",
     "actions.change-page.name": "Seite Wechseln",
     "actions.go-to-sleep.name": "Bildschirmschoner Starten",
+    "actions.go-to-previous-page.name": "Zur Vorherigen Seite Gehen",
     "actions.set-brightness.name": "Helligkeit Ändern",
     "actions.revert-brightness.name": "Helligkeit zurücksetzen",
     "actions.adjust-brightness.name": "Helligkeit anpassen",

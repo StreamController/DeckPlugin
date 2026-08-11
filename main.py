@@ -387,6 +387,21 @@ class GoToSleep(ActionBase):
     def on_key_down(self):
         self.deck_controller.screen_saver.show()
 
+class GoToPreviousPage(ActionBase):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def on_ready(self):
+        self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "go_to_previous_page.png"), size=0.8)
+
+    def on_key_down(self):
+        previous_page_path = self.plugin_base.previous_pages.get(self.deck_controller.serial_number())
+        if previous_page_path is None:
+            return
+
+        page = gl.page_manager.get_page(previous_page_path, deck_controller=self.deck_controller)
+        self.deck_controller.load_page(page)
+
 class SetBrightness(ActionBase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -531,6 +546,11 @@ class DeckPlugin(PluginBase):
 
         self.init_locale_manager()
 
+        # Tracks the page that was active on each deck (by serial number) right before
+        # the current one, so GoToPreviousPage can jump back to it
+        self.previous_pages: dict[str, str] = {}
+        gl.signal_manager.connect_signal(signal=Signals.ChangePage, callback=self.on_change_page)
+
         ## Register actions
         self.change_page_holder = ActionHolder(
             plugin_base=self,
@@ -557,6 +577,20 @@ class DeckPlugin(PluginBase):
             }
         )
         self.add_action_holder(self.go_to_sleep_holder)
+
+        self.go_to_previous_page_holder = ActionHolder(
+            plugin_base=self,
+            action_base=GoToPreviousPage,
+            action_id_suffix="GoToPreviousPage",
+            action_name=self.lm.get("actions.go-to-previous-page.name"),
+            icon=Gtk.Image(icon_name="mail-reply-sender-symbolic"),
+            action_support={
+                Input.Key: ActionInputSupport.SUPPORTED,
+                Input.Dial: ActionInputSupport.SUPPORTED,
+                Input.Touchscreen: ActionInputSupport.UNTESTED
+            }
+        )
+        self.add_action_holder(self.go_to_previous_page_holder)
 
         self.change_brightness_holder = ActionHolder(
             plugin_base=self,
@@ -610,3 +644,8 @@ class DeckPlugin(PluginBase):
     def init_locale_manager(self):
         self.lm = self.locale_manager
         self.lm.set_to_os_default()
+
+    def on_change_page(self, controller: DeckController, old_path: str, new_path: str) -> None:
+        if old_path is None:
+            return
+        self.previous_pages[controller.serial_number()] = old_path
