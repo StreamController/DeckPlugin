@@ -343,7 +343,9 @@ class ChangeState(ActionBase):
     def on_key_down(self):
         settings = self.get_settings()
         target_input = self.get_target_input()
-        current_state = target_input.state
+        # For the own input this stays self.state - the state this action lives in -
+        # so chained actions behave exactly like before targeting was possible
+        current_state = self.state if target_input is self.get_input() else target_input.state
 
         timeout = settings.get("return_timeout")
         if timeout is not None:
