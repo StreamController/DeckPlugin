@@ -221,29 +221,115 @@ class ChangeState(ActionBase):
     def on_ready(self):
         self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "sidebar.png"), size=0.8)
 
+    def get_target_identifier(self):
+        """The identifier of the input to change, None means this input itself"""
+        target = self.get_settings().get("target_input")
+        if not isinstance(target, dict):
+            return None
+
+        input_type = target.get("input_type")
+        json_identifier = target.get("json_identifier")
+        if None in (input_type, json_identifier):
+            return None
+
+        try:
+            return Input.FromTypeIdentifier(input_type, json_identifier)
+        except ValueError:
+            return None
+
+    def targets_own_input(self) -> bool:
+        identifier = self.get_target_identifier()
+        return identifier in (None, self.input_ident)
+
+    def get_target_input(self):
+        identifier = self.get_target_identifier()
+        if identifier is None:
+            return self.get_input()
+
+        controller_input = self.deck_controller.get_input(identifier)
+        if controller_input is None:
+            # The selected input does not exist on this deck
+            return self.get_input()
+        return controller_input
+
     def get_config_rows(self) -> list:
-        n_states = len(self.get_input().states)
-        self.spinner = Adw.SpinRow.new_with_range(1, n_states, 1)
+        self.input_model = Gtk.ListStore.new([str, str, str])
+        self.input_selector_row = ComboRow(model=self.input_model, title="Input:")
+
+        self.input_selector_cell_renderer = Gtk.CellRendererText()
+        self.input_selector_row.combo_box.pack_start(self.input_selector_cell_renderer, True)
+        self.input_selector_row.combo_box.add_attribute(self.input_selector_cell_renderer, "text", 0)
+
+        self.spinner = Adw.SpinRow.new_with_range(1, 1, 1)
         self.spinner.set_snap_to_ticks(True)
         self.spinner.set_title("State:")
 
         self.return_timeout = Adw.SpinRow.new_with_range(0, 60, 0.1)
         self.return_timeout.set_title("Return timeout (0 to disable):")
 
+        self.load_input_model()
+
         self.load_config_defaults()
 
+        self.input_selector_row.combo_box.connect("changed", self.on_input_changed)
         self.spinner.connect("changed", self.on_change_state)
         self.return_timeout.connect("changed", self.on_return_timeout_changed)
 
-        return [self.spinner, self.return_timeout]
-    
+        return [self.input_selector_row, self.spinner, self.return_timeout]
+
+    def load_input_model(self):
+        self.input_model.append(["This input", "", ""])
+
+        for controller_input in self.deck_controller.inputs.get(Input.Key, []):
+            identifier = controller_input.identifier
+            self.input_model.append([f"Key {identifier.json_identifier}", identifier.input_type, identifier.json_identifier])
+
+        for controller_input in self.deck_controller.inputs.get(Input.Dial, []):
+            identifier = controller_input.identifier
+            self.input_model.append([f"Dial {identifier.index + 1}", identifier.input_type, identifier.json_identifier])
+
+    def select_input(self, identifier) -> None:
+        if identifier is not None:
+            for i, row in enumerate(self.input_model):
+                if row[1] == identifier.input_type and row[2] == identifier.json_identifier:
+                    self.input_selector_row.combo_box.set_active(i)
+                    return
+
+        self.input_selector_row.combo_box.set_active(0)
+
+    def update_state_range(self):
+        n_states = len(self.get_target_input().states)
+        self.spinner.get_adjustment().set_upper(max(n_states, 1))
+
     def load_config_defaults(self):
         settings = self.get_settings()
+
+        self.select_input(self.get_target_identifier())
+        self.update_state_range()
+
         state = settings.setdefault("state", 0)
         self.spinner.set_value(state + 1)
 
         self.return_timeout.set_value(settings.get("return_timeout", 0))
-    
+
+    def on_input_changed(self, combo, *args):
+        active = combo.get_active()
+        if active < 0:
+            return
+        input_type, json_identifier = self.input_model[active][1], self.input_model[active][2]
+
+        settings = self.get_settings()
+        if "" in (input_type, json_identifier):
+            settings["target_input"] = None
+        else:
+            settings["target_input"] = {
+                "input_type": input_type,
+                "json_identifier": json_identifier
+            }
+        self.set_settings(settings)
+
+        self.update_state_range()
+
     def on_change_state(self, spinner):
         settings = self.get_settings()
         settings["state"] = round(spinner.get_value()) - 1
@@ -256,22 +342,30 @@ class ChangeState(ActionBase):
 
     def on_key_down(self):
         settings = self.get_settings()
+        target_input = self.get_target_input()
+        current_state = target_input.state
+
         timeout = settings.get("return_timeout")
         if timeout is not None:
             if round(timeout, 1) > 0:
-                timer = threading.Timer(timeout, self.get_input().set_state, args=[self.state])
+                timer = threading.Timer(timeout, target_input.set_state, args=[current_state])
                 timer.setName("ReturnTimer")
                 timer.setDaemon(True)
                 timer.start()
 
 
         state = settings.get("state")
-        if state == self.state:
+        if state == current_state:
             return
-        self.get_input().set_state(state)
+        target_input.set_state(state)
 
 
     def on_state_removed(self, state, state_map):
+        if not self.targets_own_input():
+            # The signal doesn't tell us which input lost a state, so it can't be
+            # mapped onto another input
+            return
+
         settings = self.get_settings()
         set_state = settings.get("state")
         if state == set_state:
