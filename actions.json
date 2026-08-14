@@ -1,0 +1,72 @@
+{
+    "plugin": {
+        "description": "Controls the deck itself: switch pages, switch a button's state, change brightness and put the deck to sleep.",
+        "requirements": "Nothing."
+    },
+    "actions": {
+        "ChangeState": {
+            "description": "Switches an input to another of its states. This is how a button does something different the second time it is pressed - put it on state 0 pointing at state 1, and one on state 1 pointing back at 0.",
+            "settings": {
+                "state": {
+                    "type": "integer",
+                    "required": true,
+                    "description": "The state to switch to, counting from 0.",
+                    "example": 1
+                },
+                "return_timeout": {
+                    "type": "number",
+                    "default": 0,
+                    "description": "Seconds until it falls back to the previous state on its own. 0 disables it - use it for an arm/confirm button that should not stay armed."
+                },
+                "target_input": {
+                    "type": "object",
+                    "default": null,
+                    "description": "Leave this out to switch this input itself. Set {\"input_type\": \"keys\", \"json_identifier\": \"1x0\"} to switch a different key instead."
+                }
+            }
+        },
+        "ChangePage": {
+            "description": "Switches the deck to another page.",
+            "settings": {
+                "selected_page": {
+                    "type": "string",
+                    "required": true,
+                    "description": "Absolute path of the page json file, as listed under the available pages."
+                },
+                "return_timeout": {
+                    "type": "number",
+                    "default": 0,
+                    "description": "Seconds until the deck returns to the previous page. 0 disables it."
+                },
+                "deck_number": {
+                    "type": "integer",
+                    "default": null,
+                    "description": "Only needed to change the page on a different deck than the one the button is on."
+                }
+            }
+        },
+        "GoToPreviousPage": {
+            "description": "Switches back to the page the deck was on before. Pair it with Change Page to build a menu you can leave again.",
+            "settings": {}
+        },
+        "ChangeBrightness": {
+            "description": "Sets the deck's screen brightness to a fixed value.",
+            "settings": {
+                "brightness": {
+                    "type": "integer",
+                    "default": 50,
+                    "description": "Brightness in percent, 0 to 100.",
+                    "example": 75
+                }
+            }
+        },
+        "AdjustBrightness": {
+            "description": "Raises or lowers the deck's brightness by a step. Good on a dial, where turning it dims and brightens.",
+            "settings": {}
+        },
+        "GoToSleep": {
+            "description": "Turns the deck's screens off immediately, as the screensaver would.",
+            "settings": {}
+        }
+    }
+}
